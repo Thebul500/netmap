@@ -17,15 +17,16 @@ dependencies = [
     "alembic>=1.13",
     "pydantic-settings>=2.2",
     "python-jose[cryptography]>=3.3",
-    "passlib[bcrypt]>=1.7",
+    "bcrypt>=4.0",
     "httpx>=0.27",
+    "email-validator>=2.0",
 ]
 
 [project.scripts]
 netmap = "netmap.app:create_app"
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-cov", "pytest-asyncio", "httpx", "ruff", "mypy", "bandit"]
+dev = ["pytest", "pytest-cov", "pytest-asyncio", "httpx", "aiosqlite", "ruff", "mypy", "bandit"]
 
 [tool.ruff]
 line-length = 100
