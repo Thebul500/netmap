@@ -1,6 +1,5 @@
 """Tests for SQLAlchemy models."""
 
-from sqlalchemy import inspect
 
 from netmap.database import Base
 from netmap.models import BaseModel

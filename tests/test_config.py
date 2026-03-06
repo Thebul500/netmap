@@ -1,6 +1,5 @@
 """Tests for configuration module."""
 
-import os
 
 from netmap.config import Settings, settings
 
