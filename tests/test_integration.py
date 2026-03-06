@@ -1,5 +1,10 @@
 """API integration tests — real HTTP calls via FastAPI TestClient, no mocks."""
 
+import os
+
+# Test-only credentials — not real secrets
+TEST_PASSWORD = os.environ.get("TEST_PASSWORD", "test-only-placeholder")
+
 
 # ── Auth: Register ────────────────────────────────────────────
 
@@ -7,7 +12,7 @@
 def test_register_success(db_client):
     resp = db_client.post(
         "/auth/register",
-        json={"username": "alice", "email": "alice@example.com", "password": "testpass123"},
+        json={"username": "alice", "email": "alice@example.com", "password": TEST_PASSWORD},
     )
     assert resp.status_code == 201
     data = resp.json()
@@ -18,11 +23,11 @@ def test_register_success(db_client):
 
 
 def test_register_duplicate_username(db_client):
-    payload = {"username": "bob", "email": "bob@example.com", "password": "pass"}
+    payload = {"username": "bob", "email": "bob@example.com", "password": TEST_PASSWORD}
     db_client.post("/auth/register", json=payload)
     resp = db_client.post(
         "/auth/register",
-        json={"username": "bob", "email": "other@example.com", "password": "pass"},
+        json={"username": "bob", "email": "other@example.com", "password": TEST_PASSWORD},
     )
     assert resp.status_code == 400
     assert "already registered" in resp.json()["detail"]
@@ -31,11 +36,11 @@ def test_register_duplicate_username(db_client):
 def test_register_duplicate_email(db_client):
     db_client.post(
         "/auth/register",
-        json={"username": "user1", "email": "same@example.com", "password": "pass"},
+        json={"username": "user1", "email": "same@example.com", "password": TEST_PASSWORD},
     )
     resp = db_client.post(
         "/auth/register",
-        json={"username": "user2", "email": "same@example.com", "password": "pass"},
+        json={"username": "user2", "email": "same@example.com", "password": TEST_PASSWORD},
     )
     assert resp.status_code == 400
 
@@ -43,7 +48,7 @@ def test_register_duplicate_email(db_client):
 def test_register_invalid_email(db_client):
     resp = db_client.post(
         "/auth/register",
-        json={"username": "bad", "email": "not-an-email", "password": "pass"},
+        json={"username": "bad", "email": "not-an-email", "password": TEST_PASSWORD},
     )
     assert resp.status_code == 422
 
@@ -56,8 +61,10 @@ def test_register_missing_fields(db_client):
 # ── Auth: Login ───────────────────────────────────────────────
 
 
-def _register_and_login(client, username="testuser", password="testpass"):
+def _register_and_login(client, username="testuser", password=None):
     """Helper: register a user and return the Bearer token."""
+    if password is None:
+        password = TEST_PASSWORD
     client.post(
         "/auth/register",
         json={"username": username, "email": f"{username}@example.com", "password": password},
@@ -72,11 +79,11 @@ def _register_and_login(client, username="testuser", password="testpass"):
 def test_login_success(db_client):
     db_client.post(
         "/auth/register",
-        json={"username": "carol", "email": "carol@example.com", "password": "mypass"},
+        json={"username": "carol", "email": "carol@example.com", "password": TEST_PASSWORD},
     )
     resp = db_client.post(
         "/auth/login",
-        json={"username": "carol", "email": "carol@example.com", "password": "mypass"},
+        json={"username": "carol", "email": "carol@example.com", "password": TEST_PASSWORD},
     )
     assert resp.status_code == 200
     data = resp.json()
@@ -87,11 +94,11 @@ def test_login_success(db_client):
 def test_login_wrong_password(db_client):
     db_client.post(
         "/auth/register",
-        json={"username": "dave", "email": "dave@example.com", "password": "right"},
+        json={"username": "dave", "email": "dave@example.com", "password": TEST_PASSWORD},
     )
     resp = db_client.post(
         "/auth/login",
-        json={"username": "dave", "email": "dave@example.com", "password": "wrong"},
+        json={"username": "dave", "email": "dave@example.com", "password": "wrong-password"},
     )
     assert resp.status_code == 401
     assert "Invalid credentials" in resp.json()["detail"]
@@ -100,7 +107,7 @@ def test_login_wrong_password(db_client):
 def test_login_nonexistent_user(db_client):
     resp = db_client.post(
         "/auth/login",
-        json={"username": "ghost", "email": "ghost@example.com", "password": "nope"},
+        json={"username": "ghost", "email": "ghost@example.com", "password": TEST_PASSWORD},
     )
     assert resp.status_code == 401
 
@@ -295,8 +302,8 @@ def test_delete_device_not_found(db_client):
 
 
 def test_user_cannot_see_other_users_devices(db_client):
-    token_a = _register_and_login(db_client, "userA", "passA")
-    token_b = _register_and_login(db_client, "userB", "passB")
+    token_a = _register_and_login(db_client, "userA")
+    token_b = _register_and_login(db_client, "userB")
 
     db_client.post(
         "/devices/",
@@ -309,8 +316,8 @@ def test_user_cannot_see_other_users_devices(db_client):
 
 
 def test_user_cannot_update_other_users_device(db_client):
-    token_a = _register_and_login(db_client, "ownerA", "passA")
-    token_b = _register_and_login(db_client, "ownerB", "passB")
+    token_a = _register_and_login(db_client, "ownerA")
+    token_b = _register_and_login(db_client, "ownerB")
 
     create_resp = db_client.post(
         "/devices/",
@@ -328,8 +335,8 @@ def test_user_cannot_update_other_users_device(db_client):
 
 
 def test_user_cannot_delete_other_users_device(db_client):
-    token_a = _register_and_login(db_client, "delA", "passA")
-    token_b = _register_and_login(db_client, "delB", "passB")
+    token_a = _register_and_login(db_client, "delA")
+    token_b = _register_and_login(db_client, "delB")
 
     create_resp = db_client.post(
         "/devices/",
