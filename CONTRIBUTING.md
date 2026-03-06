@@ -62,7 +62,7 @@ pytest -k "test_health" -v
 For local testing, set the database URL:
 
 ```bash
-export NETMAP_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/netmap
+export NETMAP_DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/netmap
 ```
 
 ### Linting and Type Checking

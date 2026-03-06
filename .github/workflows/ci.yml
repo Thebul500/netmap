@@ -14,18 +14,18 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: netmap
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: netmap_test
+          POSTGRES_USER: netmap_ci
+          POSTGRES_PASSWORD: ${{ secrets.CI_DB_PASSWORD || 'ci-only-ephemeral' }}
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres"
+          --health-cmd "pg_isready -U netmap_ci"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
     env:
-      NETMAP_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/netmap
+      NETMAP_DATABASE_URL: postgresql+asyncpg://netmap_ci:${{ secrets.CI_DB_PASSWORD || 'ci-only-ephemeral' }}@localhost:5432/netmap_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

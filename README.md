@@ -42,5 +42,5 @@ Environment variables (prefix `NETMAP_`):
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DATABASE_URL` | `postgresql+asyncpg://...` | Database connection string |
-| `SECRET_KEY` | `change-me` | JWT signing key |
+| `SECRET_KEY` | *(auto-generated)* | JWT signing key |
 | `DEBUG` | `false` | Enable debug mode |
