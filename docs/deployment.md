@@ -47,8 +47,8 @@ All settings are configured via environment variables with the `NETMAP_` prefix:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `NETMAP_DATABASE_URL` | `postgresql+asyncpg://postgres:postgres@localhost:5432/netmap` | Async database connection string |
-| `NETMAP_SECRET_KEY` | `change-me-in-production` | Secret key for signing JWT tokens. **Must be changed in production.** |
+| `NETMAP_DATABASE_URL` | `postgresql+asyncpg://localhost:5432/netmap` | Async database connection string |
+| `NETMAP_SECRET_KEY` | *(random hex)* | Secret key for signing JWT tokens. **Must be set in production.** |
 | `NETMAP_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | JWT token lifetime in minutes |
 | `NETMAP_DEBUG` | `false` | Enable debug mode (do not use in production) |
 

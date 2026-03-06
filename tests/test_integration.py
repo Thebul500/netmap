@@ -7,7 +7,7 @@
 def test_register_success(db_client):
     resp = db_client.post(
         "/auth/register",
-        json={"username": "alice", "email": "alice@example.com", "password": "secret123"},
+        json={"username": "alice", "email": "alice@example.com", "password": "testpass123"},
     )
     assert resp.status_code == 201
     data = resp.json()
