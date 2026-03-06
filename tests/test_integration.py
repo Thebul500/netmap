@@ -197,14 +197,19 @@ def test_list_devices(db_client):
     )
     resp = db_client.get("/devices/", headers=headers)
     assert resp.status_code == 200
-    assert len(resp.json()) == 2
+    data = resp.json()
+    assert data["total"] == 2
+    assert len(data["items"]) == 2
+    assert data["page"] == 1
 
 
 def test_list_devices_empty(db_client):
     token = _register_and_login(db_client)
     resp = db_client.get("/devices/", headers=_auth_header(token))
     assert resp.status_code == 200
-    assert resp.json() == []
+    data = resp.json()
+    assert data["total"] == 0
+    assert data["items"] == []
 
 
 def test_get_device(db_client):
@@ -312,7 +317,7 @@ def test_user_cannot_see_other_users_devices(db_client):
     )
     resp = db_client.get("/devices/", headers=_auth_header(token_b))
     assert resp.status_code == 200
-    assert len(resp.json()) == 0
+    assert resp.json()["total"] == 0
 
 
 def test_user_cannot_update_other_users_device(db_client):
@@ -355,3 +360,115 @@ def test_user_cannot_delete_other_users_device(db_client):
 def test_invalid_token_rejected(db_client):
     resp = db_client.get("/devices/", headers={"Authorization": "Bearer garbage.token.here"})
     assert resp.status_code == 401
+
+
+# ── Validation ───────────────────────────────────────────────
+
+
+def test_create_device_invalid_ip(db_client):
+    token = _register_and_login(db_client)
+    resp = db_client.post(
+        "/devices/",
+        json={"hostname": "bad", "ip_address": "not-an-ip"},
+        headers=_auth_header(token),
+    )
+    assert resp.status_code == 422
+
+
+def test_create_device_invalid_mac(db_client):
+    token = _register_and_login(db_client)
+    resp = db_client.post(
+        "/devices/",
+        json={"hostname": "bad", "ip_address": "10.0.0.1", "mac_address": "invalid"},
+        headers=_auth_header(token),
+    )
+    assert resp.status_code == 422
+
+
+# ── Pagination ───────────────────────────────────────────────
+
+
+def test_pagination_params(db_client):
+    token = _register_and_login(db_client)
+    headers = _auth_header(token)
+    for i in range(5):
+        db_client.post(
+            "/devices/",
+            json={"hostname": f"d{i}", "ip_address": f"10.0.0.{i + 1}"},
+            headers=headers,
+        )
+    resp = db_client.get("/devices/?page=1&page_size=2", headers=headers)
+    data = resp.json()
+    assert data["total"] == 5
+    assert len(data["items"]) == 2
+    assert data["pages"] == 3
+
+
+# ── Scans ────────────────────────────────────────────────────
+
+
+def test_scans_requires_auth(db_client):
+    resp = db_client.get("/scans/")
+    assert resp.status_code == 401
+
+
+def test_create_scan(db_client):
+    token = _register_and_login(db_client)
+    resp = db_client.post(
+        "/scans/",
+        json={"target_cidr": "192.168.1.0/24"},
+        headers=_auth_header(token),
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["target_cidr"] == "192.168.1.0/24"
+    assert data["status"] in ("pending", "running", "completed")
+
+
+def test_create_scan_invalid_cidr(db_client):
+    token = _register_and_login(db_client)
+    resp = db_client.post(
+        "/scans/",
+        json={"target_cidr": "not-a-cidr"},
+        headers=_auth_header(token),
+    )
+    assert resp.status_code == 422
+
+
+def test_list_scans(db_client):
+    token = _register_and_login(db_client)
+    headers = _auth_header(token)
+    db_client.post("/scans/", json={"target_cidr": "10.0.0.0/30"}, headers=headers)
+    resp = db_client.get("/scans/", headers=headers)
+    assert resp.status_code == 200
+    assert len(resp.json()) >= 1
+
+
+def test_get_scan_detail(db_client):
+    token = _register_and_login(db_client)
+    headers = _auth_header(token)
+    create_resp = db_client.post(
+        "/scans/", json={"target_cidr": "10.0.0.0/30"}, headers=headers
+    )
+    scan_id = create_resp.json()["id"]
+    resp = db_client.get(f"/scans/{scan_id}", headers=headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "devices" in data
+
+
+def test_delete_scan(db_client):
+    token = _register_and_login(db_client)
+    headers = _auth_header(token)
+    create_resp = db_client.post(
+        "/scans/", json={"target_cidr": "10.0.0.0/30"}, headers=headers
+    )
+    scan_id = create_resp.json()["id"]
+    resp = db_client.delete(f"/scans/{scan_id}", headers=headers)
+    assert resp.status_code == 204
+
+
+def test_scan_not_found(db_client):
+    token = _register_and_login(db_client)
+    resp = db_client.get("/scans/9999", headers=_auth_header(token))
+    assert resp.status_code == 404

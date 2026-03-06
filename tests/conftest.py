@@ -1,6 +1,7 @@
 """Test fixtures."""
 
 import asyncio
+from unittest import mock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from netmap.app import create_app
 from netmap.database import Base, get_db
-from netmap.models import Device, User  # noqa: F401 — register tables with Base
+from netmap.models import Device, Scan, User  # noqa: F401 — register tables with Base
 
 
 @pytest.fixture
@@ -34,8 +35,11 @@ def db_client():
 
     app = create_app()
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
-        yield c
+
+    # Also patch the async_session used by background scan tasks
+    with mock.patch("netmap.routes.scans.async_session", testing_session):
+        with TestClient(app) as c:
+            yield c
 
     loop.run_until_complete(_drop_tables(engine))
     loop.close()

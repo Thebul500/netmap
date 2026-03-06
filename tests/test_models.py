@@ -2,7 +2,7 @@
 
 
 from netmap.database import Base
-from netmap.models import BaseModel
+from netmap.models import BaseModel, Scan
 
 
 def test_base_model_is_abstract():
@@ -20,3 +20,9 @@ def test_base_model_has_expected_attributes():
     assert "id" in BaseModel.__dict__
     assert "created_at" in BaseModel.__dict__
     assert "updated_at" in BaseModel.__dict__
+
+
+def test_scan_model_exists():
+    """Scan model is mapped to 'scans' table."""
+    assert Scan.__tablename__ == "scans"
+    assert issubclass(Scan, BaseModel)

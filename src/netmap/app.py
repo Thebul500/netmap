@@ -9,6 +9,7 @@ from . import __version__
 from .routes.auth import router as auth_router
 from .routes.devices import router as devices_router
 from .routes.health import router as health_router
+from .routes.scans import router as scans_router
 
 
 @asynccontextmanager
@@ -41,6 +42,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(auth_router)
     app.include_router(devices_router)
+    app.include_router(scans_router)
     return app
 
 
