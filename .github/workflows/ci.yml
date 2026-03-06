@@ -8,6 +8,7 @@ on:
 
 jobs:
   test:
+    name: Tests & Coverage
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -31,7 +32,45 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e .[dev]
-      - run: pytest --cov=src/netmap -v
-      - run: ruff check src/
-      - run: mypy src/netmap/ --ignore-missing-imports
-      - run: bandit -r src/netmap/ -q  # security
+      - name: Run tests with coverage
+        run: pytest --cov=netmap --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=50 -v
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .[dev]
+      - name: Ruff lint
+        run: ruff check src/
+      - name: Type check
+        run: mypy src/netmap/ --ignore-missing-imports
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .[dev]
+      - name: Bandit security scan
+        run: bandit -r src/netmap/ -f json -o bandit-report.json || true
+      - name: Check bandit results
+        run: bandit -r src/netmap/ -q
+      - name: Upload security report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
