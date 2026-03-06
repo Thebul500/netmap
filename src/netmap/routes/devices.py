@@ -47,7 +47,7 @@ async def list_devices(
     items = result.scalars().all()
 
     return PaginatedDevices(
-        items=items,
+        items=list(items),  # type: ignore[arg-type]
         total=total,
         page=page,
         page_size=page_size,

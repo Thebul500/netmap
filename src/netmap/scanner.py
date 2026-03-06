@@ -84,7 +84,7 @@ async def scan_network(cidr: str, ports: list[int], concurrency: int = 50) -> li
 
 def parse_ports(ports_str: str) -> list[int]:
     """Parse a comma-separated port string into a list of ints."""
-    ports = []
+    ports: list[int] = []
     for part in ports_str.split(","):
         part = part.strip()
         if "-" in part:
