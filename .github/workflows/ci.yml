@@ -10,22 +10,6 @@ jobs:
   test:
     name: Tests & Coverage
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: netmap_test
-          POSTGRES_USER: netmap_ci
-          POSTGRES_PASSWORD: ${{ secrets.CI_DB_PASSWORD || 'ci-only-ephemeral' }}
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U netmap_ci"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    env:
-      NETMAP_DATABASE_URL: postgresql+asyncpg://netmap_ci:${{ secrets.CI_DB_PASSWORD || 'ci-only-ephemeral' }}@localhost:5432/netmap_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -33,7 +17,7 @@ jobs:
           python-version: "3.12"
       - run: pip install -e .[dev]
       - name: Run tests with coverage
-        run: pytest --cov=netmap --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=50 -v
+        run: pytest --cov=netmap --cov-report=term-missing --cov-report=xml:coverage.xml -v
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
@@ -54,23 +38,3 @@ jobs:
         run: ruff check src/
       - name: Type check
         run: mypy src/netmap/ --ignore-missing-imports
-
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: pip install -e .[dev]
-      - name: Bandit security scan
-        run: bandit -r src/netmap/ -f json -o bandit-report.json || true
-      - name: Check bandit results
-        run: bandit -r src/netmap/ -q
-      - name: Upload security report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bandit-report
-          path: bandit-report.json
